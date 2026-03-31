@@ -86,9 +86,10 @@ BEGIN
             TRIM(county) AS county,
             TRIM(hospital_type) AS hospital_type,
             CASE
-                WHEN hospital_ownership ILIKE '%government%' THEN 'Government'
+                WHEN hospital_ownership ILIKE '%government%' OR hospital_ownership ILIKE '%veterans%' OR
+                     hospital_ownership ILIKE '%defense%' THEN 'Government'
                 WHEN hospital_ownership ILIKE '%non-profit%' THEN 'Non-Profit'
-                WHEN hospital_ownership = 'Proprietary' THEN 'For-Profit'
+                WHEN hospital_ownership = 'Proprietary' OR hospital_ownership = 'Physician' THEN 'For-Profit'
                 WHEN hospital_ownership = 'Tribal' THEN 'Tribal'
                 ELSE 'Other'
             END AS hospital_ownership,
@@ -100,7 +101,8 @@ BEGIN
             END AS emergency_services,
             CASE
                 WHEN birthing_friendly_designation = 'Y' THEN TRUE
-                ELSE FALSE
+                WHEN birthing_friendly_designation = 'N' THEN FALSE
+                ELSE NULL
             END AS birthing_friendly_designation,
             CASE
                 WHEN hospital_overall_rating ~ '^\d+$' THEN hospital_overall_rating::INT
@@ -114,15 +116,15 @@ BEGIN
             CASE WHEN mort_measures_no_different ~ '^\d+$' THEN mort_measures_no_different::INT ELSE NULL END AS mort_measures_no_different,
             CASE WHEN mort_measures_worse ~ '^\d+$' THEN mort_measures_worse::INT ELSE NULL END AS mort_measures_worse,
             TRIM(mort_group_footnote) AS mort_group_footnote,
-            CASE WHEN mort_group_footnote = '5' THEN TRUE ELSE FALSE END AS mort_not_reported,
-            CASE WHEN mort_group_footnote = '19' THEN TRUE ELSE FALSE END AS mort_not_participating,
-            CASE WHEN mort_group_footnote = '22' THEN TRUE ELSE FALSE END AS mort_dod_hospital,
-            CASE WHEN mort_group_footnote = '23' THEN TRUE ELSE FALSE END AS mort_data_issue,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['5'] THEN TRUE ELSE FALSE END AS mort_not_reported,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS mort_not_participating,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS mort_dod_hospital,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['23'] THEN TRUE ELSE FALSE END AS mort_data_issue,
             CASE
-                WHEN mort_group_footnote = '22' THEN 'Federal (DoD, VA)'
-                WHEN mort_group_footnote = '19' THEN 'Not Participating'
-                WHEN mort_group_footnote = '23' THEN 'Data Quality Issue'
-                WHEN mort_group_footnote = '5' THEN 'Insufficient Data'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['23'] THEN 'Data Quality Issue'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['5'] THEN 'Insufficient Data'
                 WHEN facility_mort_measure_count IS NOT NULL AND facility_mort_measure_count != ''
                          AND facility_mort_measure_count ~ '^\d+$'
                          AND mort_group_measure_count ~ '^\d+$'
@@ -140,15 +142,15 @@ BEGIN
             CASE WHEN safety_measures_no_different ~ '^\d+$' THEN safety_measures_no_different::INT ELSE NULL END AS safety_measures_no_different,
             CASE WHEN safety_measures_worse ~ '^\d+$' THEN safety_measures_worse::INT ELSE NULL END AS safety_measures_worse,
             TRIM(safety_group_footnote) AS safety_group_footnote,
-            CASE WHEN safety_group_footnote = '5' THEN TRUE ELSE FALSE END AS safety_not_reported,
-            CASE WHEN safety_group_footnote = '19' THEN TRUE ELSE FALSE END AS safety_not_participating,
-            CASE WHEN safety_group_footnote = '22' THEN TRUE ELSE FALSE END AS safety_dod_hospital,
-            CASE WHEN safety_group_footnote = '23' THEN TRUE ELSE FALSE END AS safety_data_issue,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['5'] THEN TRUE ELSE FALSE END AS safety_not_reported,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS safety_not_participating,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS safety_dod_hospital,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['23'] THEN TRUE ELSE FALSE END AS safety_data_issue,
             CASE
-                WHEN safety_group_footnote = '22' THEN 'Federal (DoD, VA)'
-                WHEN safety_group_footnote = '19' THEN 'Not Participating'
-                WHEN safety_group_footnote = '23' THEN 'Data Quality Issue'
-                WHEN safety_group_footnote = '5' THEN 'Insufficient Data'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['23'] THEN 'Data Quality Issue'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(safety_group_footnote, ',')) x) && ARRAY['5'] THEN 'Insufficient Data'
                 WHEN facility_safety_measure_count IS NOT NULL AND facility_safety_measure_count != ''
                          AND facility_safety_measure_count ~ '^\d+$'
                          AND safety_group_measure_count ~ '^\d+$'
@@ -166,15 +168,15 @@ BEGIN
             CASE WHEN readm_measures_no_different ~ '^\d+$' THEN readm_measures_no_different::INT ELSE NULL END AS readm_measures_no_different,
             CASE WHEN readm_measures_worse ~ '^\d+$' THEN readm_measures_worse::INT ELSE NULL END AS readm_measures_worse,
             TRIM(readm_group_footnote) AS readm_group_footnote,
-            CASE WHEN readm_group_footnote = '5' THEN TRUE ELSE FALSE END AS readm_not_reported,
-            CASE WHEN readm_group_footnote = '19' THEN TRUE ELSE FALSE END AS readm_not_participating,
-            CASE WHEN readm_group_footnote = '22' THEN TRUE ELSE FALSE END AS readm_dod_hospital,
-            CASE WHEN readm_group_footnote = '23' THEN TRUE ELSE FALSE END AS readm_data_issue,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['5'] THEN TRUE ELSE FALSE END AS readm_not_reported,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS readm_not_participating,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS readm_dod_hospital,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['23'] THEN TRUE ELSE FALSE END AS readm_data_issue,
             CASE
-                WHEN readm_group_footnote = '22' THEN 'Federal (DoD, VA)'
-                WHEN readm_group_footnote = '19' THEN 'Not Participating'
-                WHEN readm_group_footnote = '23' THEN 'Data Quality Issue'
-                WHEN readm_group_footnote = '5' THEN 'Insufficient Data'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['23'] THEN 'Data Quality Issue'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(readm_group_footnote, ',')) x) && ARRAY['5'] THEN 'Insufficient Data'
                 WHEN facility_readm_measure_count IS NOT NULL AND facility_readm_measure_count != ''
                          AND facility_readm_measure_count ~ '^\d+$'
                          AND readm_group_measure_count ~ '^\d+$'
@@ -189,14 +191,14 @@ BEGIN
             CASE WHEN pt_exp_group_measure_count ~ '^\d+$' THEN pt_exp_group_measure_count::INT ELSE NULL END AS pt_exp_group_measures_count,
             CASE WHEN facility_pt_exp_measure_count ~ '^\d+$' THEN facility_pt_exp_measure_count::INT ELSE NULL END AS facility_pt_exp_measures_count,
             TRIM(pt_exp_group_footnote) AS pt_exp_group_footnote,
-            CASE WHEN pt_exp_group_footnote = '5' THEN TRUE ELSE FALSE END AS pt_exp_not_reported,
-            CASE WHEN pt_exp_group_footnote = '19' THEN TRUE ELSE FALSE END AS pt_exp_not_participating,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['5'] THEN TRUE ELSE FALSE END AS pt_exp_not_reported,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS pt_exp_not_participating,
             FALSE AS pt_exp_data_issue,
-            CASE WHEN pt_exp_group_footnote = '22' THEN TRUE ELSE FALSE END AS pt_exp_dod_hospital,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS pt_exp_dod_hospital,
             CASE
-                WHEN pt_exp_group_footnote = '22' THEN 'Federal (DoD, VA)'
-                WHEN pt_exp_group_footnote = '19' THEN 'Not Participating'
-                WHEN pt_exp_group_footnote = '5' THEN 'Insufficient Data'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(pt_exp_group_footnote, ',')) x) && ARRAY['5'] THEN 'Insufficient Data'
                 WHEN facility_pt_exp_measure_count IS NOT NULL AND facility_pt_exp_measure_count != ''
                          AND facility_pt_exp_measure_count ~ '^\d+$'
                          AND pt_exp_group_measure_count ~ '^\d+$'
@@ -211,14 +213,14 @@ BEGIN
             CASE WHEN te_group_measure_count ~ '^\d+$' THEN te_group_measure_count::INT ELSE NULL END AS te_group_measures_count,
             CASE WHEN facility_te_measure_count ~ '^\d+$' THEN facility_te_measure_count::INT ELSE NULL END AS facility_te_measures_count,
             TRIM(te_group_footnote) AS te_group_footnote,
-            CASE WHEN te_group_footnote = '5' THEN TRUE ELSE FALSE END AS te_not_reported,
-            CASE WHEN te_group_footnote = '19' THEN TRUE ELSE FALSE END AS te_not_participating,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['5'] THEN TRUE ELSE FALSE END AS te_not_reported,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS te_not_participating,
             FALSE AS te_data_issue,
-            CASE WHEN te_group_footnote = '22' THEN TRUE ELSE FALSE END AS te_dod_hospital,
+            CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS te_dod_hospital,
             CASE
-                WHEN te_group_footnote = '22' THEN 'Federal (DoD, VA)'
-                WHEN te_group_footnote = '19' THEN 'Not Participating'
-                WHEN te_group_footnote = '5' THEN 'Insufficient Data'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(te_group_footnote, ',')) x) && ARRAY['5'] THEN 'Insufficient Data'
                 WHEN facility_te_measure_count IS NOT NULL AND facility_te_measure_count != ''
                          AND facility_te_measure_count ~ '^\d+$'
                          AND te_group_measure_count ~ '^\d+$'
@@ -255,7 +257,7 @@ BEGIN
         INSERT INTO silver_schema.cms_timely_care (
             facility_id, facility_name, address, city, state, zip_code, county,
             condition, measure_id, measure_name,
-            score_numeric, score_text, score_available,
+            score_numeric, score_text, score_available, is_score_usable, score_exclusion_reason,
             sample, footnote, start_date, end_date
         )
         SELECT
@@ -270,10 +272,28 @@ BEGIN
             TRIM(measure_id) AS measure_id,
             TRIM(measure_name) AS measure_name,
             CASE WHEN score ~ '^\d+\.?\d*$' THEN score::NUMERIC ELSE NULL END AS score_numeric,
-            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available'
+            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                       AND score !~ '^\d+\.?\d*$' THEN score ELSE NULL END AS score_text,
-            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available'
+            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                  THEN TRUE ELSE FALSE END AS score_available,
+            -- When footnote has multiple codes from different categories (e.g. 1,3) CASE hits "Unreliable" first and stops
+            -- Priority order Unreliable > Not Applicable > Use With Caution
+            CASE
+                WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23','28', '29'] THEN FALSE
+                ELSE TRUE
+            END AS is_score_usable,
+            CASE
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['1','4','5'] THEN 'Unreliable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['7','12','13'] THEN 'Not Applicable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['2','3', '11', '23','28','29'] THEN 'Use With Caution'
+            ELSE NULL
+        END AS score_exclusion_reason,
             CASE WHEN sample ~ '^\d+$' THEN sample::INT ELSE NULL END AS sample_size,
             TRIM(footnote) AS footnote,
             CASE WHEN start_date IS NULL OR start_date = '' THEN NULL
@@ -309,7 +329,7 @@ BEGIN
             facility_id, facility_name, address, city, state, zip_code, county,
             measure_id, measure_name, compared_to_national,
             denominator, score, lower_estimate, higher_estimate,
-            score_available, footnote, start_date, end_date
+            score_available, is_score_usable, score_exclusion_reason, footnote, start_date, end_date
         )
         SELECT
             TRIM(facility_id) AS facility_id,
@@ -329,8 +349,24 @@ BEGIN
             CASE WHEN score ~ '^\d+\.?\d*$' THEN score::NUMERIC ELSE NULL END AS score,
             CASE WHEN lower_estimate ~ '^\d+\.?\d*$' THEN lower_estimate::NUMERIC ELSE NULL END AS lower_estimate,
             CASE WHEN higher_estimate ~ '^\d+\.?\d*$' THEN higher_estimate::NUMERIC ELSE NULL END AS higher_estimate,
-            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available'
+            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                  THEN TRUE ELSE FALSE END AS score_available,
+            CASE
+                WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23','28', '29'] THEN FALSE
+                ELSE TRUE
+            END AS is_score_usable,
+            CASE
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['1','4','5'] THEN 'Unreliable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['7','12','13'] THEN 'Not Applicable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['2', '3', '11', '23','28','29'] THEN 'Use With Caution'
+            ELSE NULL
+        END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
             CASE WHEN start_date IS NULL OR start_date = '' THEN NULL
                  WHEN start_date ~ '^\d{2}/\d{2}/\d{4}' THEN TO_DATE(start_date, 'MM/DD/YYYY')
@@ -363,7 +399,7 @@ BEGIN
         RAISE NOTICE '>> Loading Data Into: silver_schema.cms_outpatient_imaging';
         INSERT INTO silver_schema.cms_outpatient_imaging (
             facility_id, facility_name, address, city, state, zip_code, county,
-            measure_id, measure_name, score, score_available,
+            measure_id, measure_name, score, score_available, is_score_usable, score_exclusion_reason,
             footnote, start_date, end_date
         )
         SELECT
@@ -377,8 +413,24 @@ BEGIN
             TRIM(measure_id) AS measure_id,
             TRIM(measure_name) AS measure_name,
             CASE WHEN score ~ '^\d+\.?\d*$' THEN score::NUMERIC ELSE NULL END AS score,
-            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available'
+            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                  THEN TRUE ELSE FALSE END AS score_available,
+            CASE
+                WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                ELSE TRUE
+            END AS is_score_usable,
+            CASE
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['1','4','5'] THEN 'Unreliable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['7','12','13'] THEN 'Not Applicable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['2', '3', '11', '23','28','29'] THEN 'Use With Caution'
+            ELSE NULL
+        END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
             CASE WHEN start_date IS NULL OR start_date = '' THEN NULL
                  WHEN start_date ~ '^\d{2}/\d{2}/\d{4}' THEN TO_DATE(start_date, 'MM/DD/YYYY')
@@ -412,7 +464,7 @@ BEGIN
         INSERT INTO silver_schema.cms_infections (
             facility_id, facility_name, address, city, state, zip_code, county,
             measure_id, measure_suffix, measure_name,
-            compared_to_national, score, score_available,
+            compared_to_national, score, score_available, is_score_usable, score_exclusion_reason,
             footnote, start_date, end_date
         )
         SELECT
@@ -431,8 +483,25 @@ BEGIN
                  WHEN compared_to_national ILIKE '%worse%' THEN 'Worse'
                  ELSE NULL END AS compared_to_national,
             CASE WHEN score ~ '^\d+\.?\d*$' THEN score::NUMERIC ELSE NULL END AS score,
-            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available'
+            CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                  THEN TRUE ELSE FALSE END AS score_available,
+            CASE
+                WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
+                WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                ELSE TRUE
+            END AS is_score_usable,
+            CASE
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['1','4','5'] THEN 'Unreliable'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['7','12','13'] THEN 'Not Applicable'
+            -- Code 8: CI lower bound missing (0 infections). Score is valid, only CI incomplete. Might be useful later
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['2', '3', '8', '11', '23','28','29'] THEN 'Use With Caution'
+            ELSE NULL
+        END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
             CASE WHEN start_date IS NULL OR start_date = '' THEN NULL
                  WHEN start_date ~ '^\d{2}/\d{2}/\d{4}' THEN TO_DATE(start_date, 'MM/DD/YYYY')
