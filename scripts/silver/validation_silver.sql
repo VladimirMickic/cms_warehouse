@@ -51,7 +51,7 @@ FROM silver_schema.cms_hospital_general
 GROUP BY hospital_ownership
 ORDER BY n DESC;
 
--- 4. Boolean columns — should only contain TRUE, FALSE, or NULL
+-- Boolean columns — should only contain TRUE, FALSE, or NULL
 SELECT 'emergency_services' AS column_name,
        COUNT(*) FILTER (WHERE emergency_services IS NULL) AS nulls,
        COUNT(*) FILTER (WHERE emergency_services = TRUE) AS trues,
