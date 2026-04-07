@@ -101,8 +101,7 @@ BEGIN
             END AS emergency_services,
             CASE
                 WHEN birthing_friendly_designation = 'Y' THEN TRUE
-                WHEN birthing_friendly_designation = 'N' THEN FALSE
-                ELSE NULL
+                ELSE FALSE
             END AS birthing_friendly_designation,
             CASE
                 WHEN hospital_overall_rating ~ '^\d+$' THEN hospital_overall_rating::INT
@@ -120,6 +119,7 @@ BEGIN
             CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['19'] THEN TRUE ELSE FALSE END AS mort_not_participating,
             CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['22'] THEN TRUE ELSE FALSE END AS mort_dod_hospital,
             CASE WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['23'] THEN TRUE ELSE FALSE END AS mort_data_issue,
+
             CASE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['22'] THEN 'Federal (DoD, VA)'
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(mort_group_footnote, ',')) x) && ARRAY['19'] THEN 'Not Participating'
@@ -276,22 +276,22 @@ BEGIN
                       AND score !~ '^\d+\.?\d*$' THEN score ELSE NULL END AS score_text,
             CASE WHEN score IS NOT NULL AND score != '' AND score != 'Not Available' AND score != 'N/A'
                  THEN TRUE ELSE FALSE END AS score_available,
-            -- When footnote has multiple codes from different categories (e.g. 1,3) CASE hits "Unreliable" first and stops
-            -- Priority order Unreliable > Not Applicable > Use With Caution
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23','28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
+            -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
+            -- Priority: No Score (1,4,5) > Not Applicable (7,12,13) > Use With Caution (2,3,11,23,28,29) > generic No Score
             CASE
-            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['1','4','5'] THEN 'Unreliable'
+                 && ARRAY['1','4','5'] THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
                  && ARRAY['7','12','13'] THEN 'Not Applicable'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['2','3', '11', '23','28','29'] THEN 'Use With Caution'
+                 && ARRAY['2', '3', '11', '23', '28', '29'] THEN 'Use With Caution'
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             ELSE NULL
         END AS score_exclusion_reason,
             CASE WHEN sample ~ '^\d+$' THEN sample::INT ELSE NULL END AS sample_size,
@@ -354,17 +354,19 @@ BEGIN
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23','28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
+            -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
+            -- Priority: No Score (1,4,5) > Not Applicable (7,12,13) > Use With Caution (2,3,11,23,28,29) > generic No Score
             CASE
-            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['1','4','5'] THEN 'Unreliable'
+                 && ARRAY['1','4','5'] THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
                  && ARRAY['7','12','13'] THEN 'Not Applicable'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['2', '3', '11', '23','28','29'] THEN 'Use With Caution'
+                 && ARRAY['2', '3', '11', '23', '28', '29'] THEN 'Use With Caution'
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             ELSE NULL
         END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
@@ -421,14 +423,16 @@ BEGIN
                      && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
+            -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
+            -- Priority: No Score (1,4,5) > Not Applicable (7,12,13) > Use With Caution (2,3,11,23,28,29) > generic No Score
             CASE
-            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['1','4','5'] THEN 'Unreliable'
+                 && ARRAY['1','4','5'] THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
                  && ARRAY['7','12','13'] THEN 'Not Applicable'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['2', '3', '11', '23','28','29'] THEN 'Use With Caution'
+                 && ARRAY['2', '3', '11', '23', '28', '29'] THEN 'Use With Caution'
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             ELSE NULL
         END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
@@ -488,18 +492,21 @@ BEGIN
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '8', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
+            -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
+            -- Priority: Zero Infections (8) > No Score (1,4,5) > Not Applicable (7,12,13) > Use With Caution (2,3,11,23,28,29) > generic No Score
             CASE
-            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['1','4','5'] THEN 'Unreliable'
+                 && ARRAY['8'] THEN 'No Score - Zero Infections'
+            WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
+                 && ARRAY['1','4','5'] THEN 'No Score'
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
                  && ARRAY['7','12','13'] THEN 'Not Applicable'
-            -- Code 8: CI lower bound missing (0 infections). Score is valid, only CI incomplete. Might be useful later
             WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                 && ARRAY['2', '3', '8', '11', '23','28','29'] THEN 'Use With Caution'
+                 && ARRAY['2', '3', '11', '23', '28', '29'] THEN 'Use With Caution'
+            WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN 'No Score'
             ELSE NULL
         END AS score_exclusion_reason,
             TRIM(footnote) AS footnote,
