@@ -7,16 +7,15 @@ Purpose:
     - dim_hospital: adds region mapping, keeps columns needed for analysis
     - dim_measure: unifies all measures across 4 source tables with categories
 
-    These are views, not tables — no data duplication, no load procedure needed.
+    These are views, not tables, no data duplication, no load procedure needed.
     Analytical views in gold_views.sql query silver tables directly for
     measure-level filtering (e.g., OP_18a-d only) and join to dim_hospital
     for hospital attributes.
 
-Architecture decision (Task 8.4):
-    No unified fact table. The analytical views for Q1 only need imaging +
-    timely_care, Q3 only needs complications + timely_care. A UNION of all
+Architecture decision:
+    No unified fact table. A UNION of all
     4 tables would add NULL columns for table-specific fields and complexity
-    for no benefit — each view queries exactly the silver tables it needs.
+    for no benefit, each view queries exactly the silver tables it needs.
 
 Run order:
     1. This file (creates schema + base views)
