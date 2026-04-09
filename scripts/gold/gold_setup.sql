@@ -115,11 +115,3 @@ SELECT DISTINCT
 FROM silver_schema.cms_infections;
 
 
-
-SELECT
-    *
-FROM gold_schema.dim_hospital;
-SELECT
-    *
-FROM gold_schema.dim_measure;
-
