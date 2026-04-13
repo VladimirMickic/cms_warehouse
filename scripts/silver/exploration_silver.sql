@@ -394,7 +394,7 @@ LIMIT 50;
 -- Section 6: Statistical Analysis — Correlation
 -- =============================================================================
 
--- RESULT: n=3755  avg_imaging=6.05 | avg_ed=214.34 | r = -0.0197 | R^2 = 0.0004
+-- RESULT: n=3589  avg_imaging=6.05 | avg_ed=214.34 | r = -0.0197 | R^2 = 0.0004
 -- r near zero means no linear relationship between imaging overuse and ED wait times.
 -- R^2 = 0.0004% of variance explained, essentially noise.
 -- FINDING: Imaging overuse and ED delays are independent problems.
