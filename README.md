@@ -1,10 +1,12 @@
 # Hospital Quality Analysis — CMS Hospital Compare
 
-A data pipeline that takes raw CMS hospital quality data through a bronze-silver-gold medallion architecture in PostgreSQL, then uses the clean output to investigate three business questions about hospital performance.
+**Do hospitals that over-order imaging also have longer ER waits?** Does ownership type predict it? And can a hospital follow every protocol and still be unsafe?
 
-I started with two intuitive hypotheses: that hospitals over-ordering imaging would also have longer ED waits (both feel like symptoms of the same problem), and that ownership type would predict which hospitals show that pattern.
+Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL to find out.
 
-Both were wrong. Imaging overuse and ED delays are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits — Non-Profits run 20 minutes slower than Government hospitals — but has nothing to do with whether those two problems co-occur. The real finding turned out to be more useful than what I expected to find.
+I started with two intuitive hypotheses: that imaging overuse and ED delays would cluster in the same hospitals (both feel like symptoms of the same problem), and that ownership type would predict which hospitals show that pattern.
+
+Both were wrong. The two are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits — Non-Profits run 20 minutes slower than Government hospitals — but has nothing to do with whether those problems co-occur. The real finding turned out to be more useful than what I expected to find.
 
 ## Architecture
 
