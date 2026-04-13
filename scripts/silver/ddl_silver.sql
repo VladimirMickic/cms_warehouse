@@ -1,22 +1,19 @@
-/*
-===============================================================================
-Silver Layer DDL: Cleaned and Transformed Tables
-===============================================================================
-Purpose:
-    Clean and standardize Bronze data with proper data types, standardized
-    categories, derived flags, and audit columns.
-
-    Star schema design (surrogate keys, column removal, dimensional modeling)
-    happens in the Gold layer.
-===============================================================================
-*/
+-- =============================================================================
+-- silver_setup.sql
+-- =============================================================================
+-- Typed tables built from the bronze raw layer. Each column is cast to its
+-- proper type, categories are standardized, and derived flags are added.
+--
+-- telephone_number is dropped across all tables — not analytical.
+-- dwh_create_date is the audit timestamp we add; everything else maps 1:1
+-- to a bronze column or is derived from one.
+--
+-- Star schema design.
+-- =============================================================================
 
 CREATE SCHEMA IF NOT EXISTS silver_schema;
 
 
--- =============================================================================
--- 1. silver_schema.cms_hospital_general
--- =============================================================================
 DROP TABLE IF EXISTS silver_schema.cms_hospital_general;
 
 CREATE TABLE silver_schema.cms_hospital_general (
@@ -33,10 +30,10 @@ CREATE TABLE silver_schema.cms_hospital_general (
 
     -- Service flags cast from txt to boolean
     emergency_services                  BOOLEAN,
-    birthing_friendly_hospital          BOOLEAN,
+    birthing_friendly_designation       BOOLEAN,
 
     hospital_overall_rating             INT,
-    hospital_footnote                   VARCHAR(50),
+    hospital_overall_rating_footnote    VARCHAR(50),
 
     -- Mortality Group
     mort_group_measures_count           INT,
@@ -102,25 +99,9 @@ CREATE TABLE silver_schema.cms_hospital_general (
 );
 
 
--- =============================================================================
--- 2. silver_schema.cms_timely_care
--- Source: bronze_schema.cms_timely_care (16 columns, 138,129 rows)
--- Profiling:
---   - 6 conditions, ~30 measure_ids
---   - Score: 37.7% numeric (52,018), 4% categorical text (5,577),
---           58.3% 'Not Available' (80,534), 0% NULL/empty
---   - Categorical text values: 'very high','high','medium','low','very low'
---   - Sample: needs profiling confirmation (expected integers + 'Not Available')
---   - Footnotes: multi-code comma-separated (e.g. '1, 3', '2, 3, 29')
---     Code 5 covers 63,996 rows (46%), code 2 covers 45,780 (33%)
---     ~80% of rows have a footnote; only ~20% are clean unfootnoted scores
---   - Dates: MM/DD/YYYY text, consistent format
---   - No duplicates on (facility_id, measure_id, start_date)
--- =============================================================================
 DROP TABLE IF EXISTS silver_schema.cms_timely_care;
 
 CREATE TABLE silver_schema.cms_timely_care (
-    -- Identity (natural keys)
     facility_id                         VARCHAR(6) NOT NULL,
     facility_name                       VARCHAR(255),
     address                             VARCHAR(255),
@@ -128,8 +109,6 @@ CREATE TABLE silver_schema.cms_timely_care (
     state                               VARCHAR(2),
     zip_code                            VARCHAR(10),
     county                              VARCHAR(100),
-
-    -- Measures
     condition                           VARCHAR(255),
     measure_id                          VARCHAR(100),
     measure_name                        VARCHAR(255),
@@ -138,42 +117,20 @@ CREATE TABLE silver_schema.cms_timely_care (
     score_numeric                       NUMERIC,    -- NULL when score categorical
     score_text                          VARCHAR(50), -- NULL when numeric
     score_available                     BOOLEAN,    -- False when not available or null or empty
+    is_score_usable                     BOOLEAN,
+    score_exclusion_reason              VARCHAR(25),
 
-    -- Sample size converted to int
-    sample_size                         INT,
+    sample                              INT,
     footnote                            VARCHAR(50),
     start_date                          DATE,
     end_date                            DATE,
     dwh_create_date                     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-/*
-Changes from Bronze:
-  Removed:   telephone_number (not analytical)
-  Split:     score (TEXT) - score_numeric (NUMERIC) + score_text (VARCHAR)
-  Added:     score_available (derived boolean flag)
-  Cast:      sample - sample_size (INT), start_date/end_date - DATE
-  Kept:      All other columns with proper types
-*/
 
-
--- =============================================================================
--- 3. silver_schema.cms_complications
--- Source: bronze_schema.cms_complications (18 columns, 95,780 rows)
--- Profiling:
---   - 20 measure_ids, each ~4,789 hospitals (uniform coverage)
---   - Score: 45.6% 'Not Available' (43,646 rows)
---   - Denominator: 43.6% 'Not Available'
---   - Lower/Higher estimates: 45.6% 'Not Available' (matches score exactly)
---   - compared_to_national: 8 distinct values with semantic duplicates
---     including 'Number of Cases Too Small' -> all map to 3 values + NULL
---   - Footnotes: NULL most common; codes 1 and 28 in small counts
---   - No duplicates on (facility_id, measure_id)
--- =============================================================================
 DROP TABLE IF EXISTS silver_schema.cms_complications;
 
 CREATE TABLE silver_schema.cms_complications (
-    -- Identity (natural keys)
     facility_id                         VARCHAR(6) NOT NULL,
     facility_name                       VARCHAR(255),
     address                             VARCHAR(255),
@@ -181,7 +138,6 @@ CREATE TABLE silver_schema.cms_complications (
     state                               VARCHAR(2),
     zip_code                            VARCHAR(10),
     county                              VARCHAR(100),
-
     measure_id                          VARCHAR(50),
     measure_name                        VARCHAR(255),
     compared_to_national                VARCHAR(50),
@@ -189,40 +145,16 @@ CREATE TABLE silver_schema.cms_complications (
     score                               NUMERIC,
     lower_estimate                      NUMERIC,
     higher_estimate                     NUMERIC,
-    score_available                     BOOLEAN,  -- New column to check is score available at all
+    score_available                     BOOLEAN,
+    is_score_usable                     BOOLEAN,
+    score_exclusion_reason              VARCHAR(25),
     footnote                            VARCHAR(50),
     start_date                          DATE,
     end_date                            DATE,
     dwh_create_date                     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-/*
-Changes from Bronze:
-  Removed:   telephone_number (not analytical)
-  Added:     score_available (derived boolean flag)
-  Cast:      score, denominator, lower_estimate, higher_estimate -> NUMERIC/INT
-             start_date, end_date -> DATE
-  Standardized: compared_to_national -> 3 clean values + NULL
-                'Better Than the National Rate'          -> 'Better'
-                'No Different Than the National Rate'    -> 'No Different'
-                'Worse Than the National Rate'           -> 'Worse'
-                'Number of Cases Too Small'              -> NULL
-                'Not Available' / '' / NULL              -> NULL
-                (8 original values -> 3 + NULL using ILIKE wildcards)
-  Kept:      All other columns with proper types
-*/
 
-
--- =============================================================================
--- 4. silver_schema.cms_outpatient_imaging
--- Source: bronze_schema.cms_outpatient_imaging (14 columns, 18,500 rows)
--- Profiling:
---   - 5 measure_ids, each ~3,700 hospitals (uniform coverage)
---   - Score: 47.6% 'Not Available' (8,810 rows)
---     No categorical text values -- only numeric and 'Not Available'
---   - No compared_to_national, no denominator, no confidence intervals
---   - No duplicates on (facility_id, measure_id)
--- =============================================================================
 DROP TABLE IF EXISTS silver_schema.cms_outpatient_imaging;
 
 CREATE TABLE silver_schema.cms_outpatient_imaging (
@@ -233,40 +165,19 @@ CREATE TABLE silver_schema.cms_outpatient_imaging (
     state                               VARCHAR(2),
     zip_code                            VARCHAR(10),
     county                              VARCHAR(100),
-
     measure_id                          VARCHAR(50),
     measure_name                        VARCHAR(255),
     score                               NUMERIC,   -- Lower is better
     score_available                     BOOLEAN,
+    is_score_usable                     BOOLEAN,
+    score_exclusion_reason              VARCHAR(25),
     footnote                            VARCHAR(50),
     start_date                          DATE,
     end_date                            DATE,
     dwh_create_date                     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-/*
-Changes from Bronze:
-  Removed:   telephone_number (not analytical)
-  Added:     score_available (derived boolean flag)
-  Cast:      score -> NUMERIC, start_date/end_date -> DATE
-  Kept:      All other columns with proper types
-*/
 
-
--- =============================================================================
--- 5. silver_schema.cms_infections
--- Source: bronze_schema.cms_infections (15 columns, 172,404 rows)
--- Profiling:
---   - 36 measure_ids: HAI_1 through HAI_6, each with 6 sub-measures
---     (_SIR, _CILOWER, _CIUPPER, _NUMERATOR, _ELIGCASES, _DOPC)
---   - ~36 rows per hospital (some hospitals have fewer -- missing measures)
---   - Score: all numeric but semantically different by suffix
---     _SIR = ratio around 1.0, _NUMERATOR = raw counts, _DOPC = large integers
---   - compared_to_national: different wording than complications
---     'No Different than National Benchmark' vs 'No Different Than the National Rate'
---     Both standardized to 'Better'/'No Different'/'Worse'/NULL
---   - No duplicates on (facility_id, measure_id)
--- =============================================================================
 DROP TABLE IF EXISTS silver_schema.cms_infections;
 
 CREATE TABLE silver_schema.cms_infections (
@@ -277,29 +188,16 @@ CREATE TABLE silver_schema.cms_infections (
     state                               VARCHAR(2),
     zip_code                            VARCHAR(10),
     county                              VARCHAR(100),
-
-    -- Measure attributes
     measure_id                          VARCHAR(50),
     measure_suffix                      VARCHAR(20),  -- 'SIR', 'CILOWER', 'CIUPPER', 'NUMERATOR', 'ELIGCASES', 'DOPC'
     measure_name                        VARCHAR(255),
     compared_to_national                VARCHAR(50),
     score                               NUMERIC,
     score_available                     BOOLEAN,
+    is_score_usable                     BOOLEAN,
+    score_exclusion_reason              VARCHAR(25),
     footnote                            VARCHAR(50),
     start_date                          DATE,
     end_date                            DATE,
     dwh_create_date                     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-/*
-Changes from Bronze:
-  Removed:   telephone_number (not analytical)
-  Added:     measure_suffix (parsed from measure_id: 'SIR', 'CILOWER', etc.)
-             score_available (derived boolean flag)
-  Cast:      score -> NUMERIC, start_date/end_date -> DATE
-  Standardized: compared_to_national -> 3 clean values + NULL
-                'No Different than National Benchmark' -> 'No Different'
-                (note: different wording than complications table -- standardized to match)
-  Kept:      All 36 sub-measure rows per hospital preserved
-             All other columns with proper types
-*/
