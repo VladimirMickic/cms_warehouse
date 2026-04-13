@@ -10,10 +10,6 @@ Script Purpose:
 Data Source:
     Centers for Medicare & Medicaid Services (CMS) Hospital Compare
     https://data.cms.gov/provider-data/topics/hospitals
- 
-WARNING:
-    Running this script will drop and recreate all Bronze tables.
-    Any existing data in these tables will be permanently deleted.
 ===============================================================================
 */
 
