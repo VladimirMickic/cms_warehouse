@@ -9,7 +9,7 @@
 
 
 -- =============================================================================
--- A. ROW COUNTS & PRIMARY KEY INTEGRITY
+-- ROW COUNTS & PRIMARY KEY INTEGRITY
 -- =============================================================================
 
 -- Row counts must match bronze to silver (no rows gained or lost)
@@ -108,7 +108,7 @@ WHERE h.facility_id IS NULL;
 
 
 -- =============================================================================
--- B. HOSPITAL_GENERAL TRANSFORMATIONS
+-- HOSPITAL_GENERAL TRANSFORMATIONS
 -- =============================================================================
 
 -- Ownership mapping — should be exactly 4 groups (Government/Non-Profit/For-Profit/Tribal)
@@ -182,7 +182,7 @@ WHERE b.facility_id IN ('010001', '010012', '010051');
 
 
 -- =============================================================================
--- C. SCORE & USABILITY LOGIC
+-- SCORE & USABILITY LOGIC
 -- =============================================================================
 
 -- compared_to_national should only be 'Better', 'No Different', 'Worse', or NULL
@@ -381,7 +381,7 @@ WHERE is_score_usable = TRUE
 
 
 -- =============================================================================
--- D. BRONZE VS SILVER SPOT-CHECKS
+-- BRONZE VS SILVER SPOT-CHECKS
 -- =============================================================================
 
 -- timely_care: score conversion, numeric stays numeric, text stays text,
@@ -440,7 +440,7 @@ ORDER BY b.measure_id;
 
 
 -- =============================================================================
--- E. DATE & MEASURE VALIDATION
+-- DATE AND MEASURE VALIDATION
 -- =============================================================================
 
 -- Verifying date ranges are reasonable
@@ -484,7 +484,7 @@ ORDER BY measure_suffix;
 
 
 -- =============================================================================
--- F. FOOTNOTE DISTRIBUTIONS (profiling, not pass/fail)
+-- FOOTNOTE DISTRIBUTIONS (profiling, not pass/fail)
 -- =============================================================================
 
 -- Footnote value distributions per fact table
@@ -543,7 +543,7 @@ ORDER BY n DESC;
 
 
 -- =============================================================================
--- G. DATA QUALITY INVESTIGATION
+-- DATA QUALITY INVESTIGATION
 -- =============================================================================
 
 -- How many hospitals have zero usable scores across all 4 fact tables?
