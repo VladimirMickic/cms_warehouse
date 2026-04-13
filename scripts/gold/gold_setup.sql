@@ -3,9 +3,8 @@
 Gold Layer: Base Views
 ===============================================================================
 Purpose:
-    2 base views that sit on top of Silver and add Gold-layer logic:
+    1 base view that sit on top of Silver and add Gold-layer logic:
     - dim_hospital: adds region mapping, keeps columns needed for analysis
-    - dim_measure: unifies all measures across 4 source tables with categories
 
     These are views, not tables, no data duplication, no load procedure needed.
     Analytical views in gold_views.sql query silver tables directly for
