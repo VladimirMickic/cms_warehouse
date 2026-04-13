@@ -6,7 +6,7 @@ Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL t
 
 I started with two intuitive hypotheses: that imaging overuse and ED delays would cluster in the same hospitals (both feel like symptoms of the same problem), and that ownership type would predict which hospitals show that pattern.
 
-Both were wrong. The two are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits — Non-Profits run 20 minutes slower than Government hospitals — but has nothing to do with whether those problems co-occur. The real finding turned out to be more useful than what I expected to find.
+Both were wrong. The two are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits — Non-Profits run 20 minutes slower than Government hospitals — but has nothing to do with whether those problems co-occur. The real finding was structural: Non-Profits have the highest star ratings but the slowest emergency departments — clinical quality and operational speed are measuring different things.
 
 ## Dashboard
 
