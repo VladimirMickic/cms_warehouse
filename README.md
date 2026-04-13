@@ -111,7 +111,7 @@ Building the pipeline turned up several data-handling bugs that would have produ
 
 **Requires:** PostgreSQL 14+
 
-1. Export each sheet from `hospital.xlsx` as CSV into `/tmp/`
+1. Export each sheet from `data.cms.gov` as CSV into `/tmp/`
 2. Run in order:
    ```sql
    -- Bronze
