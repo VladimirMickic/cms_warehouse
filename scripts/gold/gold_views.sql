@@ -1,51 +1,22 @@
-/*
-===============================================================================
-Gold Layer: Analytical Views
-===============================================================================
-Purpose:
-    3 views answering the project's 3 business questions.
-    Views 1-2 power the Tableau dashboard (Q1 + Q2).
-    View 3 is the SQL-only Q3 analysis.
-
-    All 3 views join to gold_schema.dim_hospital (defined in gold_setup.sql)
-    to get region mapping and hospital attributes without repeating the
-    region CASE statement in every view.
-
-Business Questions:
-    Q1 (Dashboard): Do hospitals that over-order imaging also have longer
-        ED wait times — or are these independent problems?
-    Q2 (Dashboard): Does hospital ownership type predict which hospitals
-        have imaging and ED problems?
-    Q3 (SQL-only): Can a hospital be operationally efficient but clinically
-        unsafe? (Complications vs process-of-care)
-
-Design decisions driven by silver exploration (query_reasoning.md):
-    - ED measures: OP_18a-d only (minutes). OP_22/OP_23 are percentages.
-    - ED outliers: filtered out with a 1,440-minute (24-hour) hard cap.
-    - Imaging: Exclude OP-8 (n=612, median 36.5% vs ~5% for others).
-    - Complications: compared_to_national not raw scores (base rates differ).
-    - Minimum 3 rated complication measures per hospital.
-    - Reporting dates: included as context (reporting_period_start/end) but
-      not used as analytical dimensions — CMS publishes one snapshot per
-      release, so all hospitals share the same reporting window per table.
-===============================================================================
-*/
-
-
 -- =============================================================================
--- VIEW 1: vw_imaging_vs_ed_wait (Dashboard — Scatter Plot)
+-- gold_views.sql
 -- =============================================================================
--- One row per hospital with BOTH usable imaging and ED scores.
--- Imaging: OP-10, OP-13, OP-39 only (exclude OP-8: different scale, n=612).
---   Lower score = better (less inappropriate imaging).
--- ED wait: OP_18a-d only (minutes, not percentages).
---   Higher score = worse (longer wait). Scores > 24 hours filtered as artifacts.
--- INNER JOIN ensures only hospitals with BOTH domains appear.
--- Sample: ~3,761 hospitals (69.3% of 5,426). Survivorship bias toward
---   large urban hospitals documented in README.
+-- 3 analytical views answering the project's business questions.
+-- All join to dim_hospital for region and ownership, no repeated CASE logic.
+--
+-- Q1: Do hospitals that over-order imaging also have longer ED waits?
+-- Q2: Does ownership predict imaging/ED performance? (Summary of Q1 by group)
+-- Q3: Can a hospital be operationally efficient but clinically unsafe?
+--
+-- Key filter decisions:
+--   ED: OP_18a-d only (minutes). OP_22/23 are percentages, different unit.
+--   Imaging: OP-10, OP-13, OP-39 only. OP-8 excluded (different scale).
+--   ED outliers: hard cap at 1,440 min (24h) — anything beyond is an artifact.
+--   Process-of-care: Colonoscopy care + Healthcare Personnel Vaccination only.
+--   Complications: requires >= 3 rated measures per hospital.
+-- =============================================================================
 
 
-DROP VIEW gold_schema.vw_imaging_vs_ed_wait;
 CREATE OR REPLACE VIEW gold_schema.vw_imaging_vs_ed_wait AS
 WITH imaging_scores AS (
     SELECT
@@ -93,19 +64,11 @@ SELECT
     e.ed_period_start,
     e.ed_period_end
 FROM gold_schema.dim_hospital d
-INNER JOIN imaging_scores i ON d.facility_id = i.facility_id
-INNER JOIN ed_scores e ON d.facility_id = e.facility_id;
+JOIN imaging_scores i ON d.facility_id = i.facility_id
+JOIN ed_scores e ON d.facility_id = e.facility_id;
 
 
--- =============================================================================
--- VIEW 2: vw_ownership_imaging_ed_summary (Dashboard — Summary Bars)
--- =============================================================================
--- Aggregated by ownership type from the Q1 view.
--- Tribal excluded (1 hospital in sample — not statistically meaningful).
--- Includes STDDEV so viewers can see spread within each ownership group.
--- No dates here — this is a summary view, reporting period is in View 1.
-DROP VIEW gold_schema.vw_ownership_imaging_ed_statistics;
-CREATE OR REPLACE VIEW gold_schema.vw_ownership_imaging_ed_stats AS
+CREATE OR REPLACE VIEW gold_schema.vw_ownership_imaging_ed_summary AS
 SELECT
     hospital_ownership,
     COUNT(*) AS n_hospitals,
@@ -113,34 +76,13 @@ SELECT
     ROUND(STDDEV(avg_imaging_score), 2) AS stddev_imaging_score,
     ROUND(AVG(avg_ed_wait_minutes), 2) AS avg_ed_wait_minutes,
     ROUND(STDDEV(avg_ed_wait_minutes), 2) AS stddev_ed_wait_minutes,
-    ROUND(AVG(hospital_overall_rating), 2) AS avg_star_rating,
-    ROUND(CORR(avg_imaging_score, avg_ed_wait_minutes)::numeric, 2) correlation
+    ROUND(AVG(hospital_overall_rating), 2) AS avg_star_rating
 FROM gold_schema.vw_imaging_vs_ed_wait
 WHERE hospital_ownership != 'Tribal'
 GROUP BY hospital_ownership
 ORDER BY n_hospitals DESC;
 
 
--- =============================================================================
--- VIEW 3: vw_complications_vs_process_care (SQL-only — Q3)
--- =============================================================================
--- Can a hospital be operationally efficient but clinically unsafe?
---
--- Complication side: broken out by measure category (MORT%, PSI%, COMP%) so
---   each can be analysed independently. Only MORT% shows meaningful variation
---   (5.6% Better / 91.3% No Different / 3.1% Worse). PSI% and COMP% are 97%+
---   "No Different" — essentially noise. Requires >= 3 rated measures overall.
---
--- Process-of-care side: filters to Colonoscopy, Vaccination, and Surgical Care
---   conditions only. These are all compliance percentages on comparable scales.
---   Excluded:
---     - 'Emergency Department' (wait times in minutes, different unit)
---     - 'Sepsis' (bundles scored 18-92%, compresses the average and has only
---       18-25% usable rows — low coverage, incompatible baseline)
---     - 'Healthcare Associated Infections' (OP_40 is likely minutes not %)
---     - 'Electronic Clinical Quality' (HH_HYPER/HYPO/ORAE are harm rates not
---       compliance; OP_40 is incompatible scale)
-DROP VIEW gold_schema.vw_complications_vs_process_care;
 CREATE OR REPLACE VIEW gold_schema.vw_complications_vs_process_care AS
 WITH comp_performance AS (
     SELECT
@@ -183,7 +125,9 @@ process_care AS (
         MIN(start_date) AS process_period_start,
         MAX(end_date)   AS process_period_end
     FROM silver_schema.cms_timely_care
-    WHERE condition IN ('Colonoscopy', 'Vaccination', 'Surgical Care')
+    WHERE condition IN ('Colonoscopy care', 'Healthcare Personnel Vaccination')
+      -- 'Surgical Care' does not exist in data; 'Cataract surgery outcome' is an outcome
+      -- measure not a compliance %, so excluded. Sepsis/ECQ/ED excluded as before.
       AND is_score_usable = TRUE
       AND score_numeric IS NOT NULL
     GROUP BY facility_id
@@ -217,4 +161,3 @@ FROM gold_schema.dim_hospital d
 INNER JOIN comp_performance c ON d.facility_id = c.facility_id
 INNER JOIN process_care p ON d.facility_id = p.facility_id
 WHERE c.comp_rated_total >= 3;  -- minimum for meaningful % worse
-
