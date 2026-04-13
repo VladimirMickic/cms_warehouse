@@ -1,40 +1,20 @@
-/*
-===============================================================================
-Gold Layer: Base Views
-===============================================================================
-Purpose:
-    1 base view that sit on top of Silver and add Gold-layer logic:
-    - dim_hospital: adds region mapping, keeps columns needed for analysis
-
-    These are views, not tables, no data duplication, no load procedure needed.
-    Analytical views in gold_views.sql query silver tables directly for
-    measure-level filtering (e.g., OP_18a-d only) and join to dim_hospital
-    for hospital attributes.
-
-Architecture decision:
-    No unified fact table. A UNION of all
-    4 tables would add NULL columns for table-specific fields and complexity
-    for no benefit, each view queries exactly the silver tables it needs.
-
-Run order:
-    1. This file (creates schema + base views)
-    2. gold_views.sql (creates analytical views)
-===============================================================================
-*/
+-- =============================================================================
+-- gold_setup.sql
+-- =============================================================================
+-- 1 base view on top of silver. No tables, no load proc, view evaluates
+-- lazily so there's no data duplication.
+--
+-- dim_hospital: one row per hospital, adds US Census region mapping.
+--
+-- Analytical views in gold_views.sql query silver directly and join to
+-- dim_hospital for hospital attributes. No unified fact table, each view
+-- pulls exactly the silver tables it needs, nothing more.
+--
+-- Run this file first, then gold_views.sql.
+-- =============================================================================
 
 CREATE SCHEMA IF NOT EXISTS gold_schema;
 
-
--- =============================================================================
--- 1. dim_hospital
--- =============================================================================
--- One row per hospital with attributes needed by all 3 business questions.
--- Columns included: facility_id, name, ownership, type, state, region, star rating.
--- Columns excluded: address, city, zip, county, reporting status, service flags
---   (not used by any analytical view).
--- Region: US Census Bureau 4-region classification + Territory.
---   Territories (PR, GU, VI, AS, MP) grouped separately and excluded from
---   analytical views — 87-100% unusable scores across all fact tables.
 
 CREATE OR REPLACE VIEW gold_schema.dim_hospital AS
 SELECT
@@ -54,5 +34,7 @@ SELECT
     END AS region,
     hospital_overall_rating
 FROM silver_schema.cms_hospital_general;
+
+
 
 
