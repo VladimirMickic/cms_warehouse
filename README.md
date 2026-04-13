@@ -130,7 +130,7 @@ Building the pipeline turned up several data-handling bugs that would have produ
    ```
 3. Validate with `bronze/bronze_checks.sql`, `silver/silver_checks.sql`, `gold/gold_checks.sql`.
 
-> **Note:** A single bootstrap script (`run_all.sh`) that handles CSV export and sequential execution would improve reproducibility — it's on the roadmap.
+> **Note:** A single bootstrap script (`run_all.sh`) that handles CSV export and sequential execution would improve reproducibility.
 
 ## License
 
