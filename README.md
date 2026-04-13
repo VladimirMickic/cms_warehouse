@@ -10,7 +10,7 @@ Both were wrong. The two are statistically independent (r = -0.020). Ownership t
 
 ## Dashboard
 
-> **[View on Tableau Public →](LINK_HERE)**
+> **[View on Tableau Public →](https://public.tableau.com/app/profile/vladimir.mickic/viz/Hospitals_17760513311400/HospitalDashboard?publish=yes)**
 
 <!-- 
   To add screenshots:
