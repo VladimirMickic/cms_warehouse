@@ -41,7 +41,6 @@ gold/
   gold_checks.sql           -- Row count validation, correlation queries
   sql_analysis.sql          -- Standalone analyses (ownership vs ratings, reporting completeness)
 
-query_reasoning.md          -- Why each exploration query exists and what it found
 ```
 
 ## Row Counts
