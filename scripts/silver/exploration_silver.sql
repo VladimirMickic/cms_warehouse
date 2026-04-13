@@ -195,7 +195,7 @@ SELECT
     (SELECT COUNT(*) FROM timely_care_hospitals) AS hospitals_timely_care,
     COUNT(*) AS hospitals_with_both
 FROM complication_hospitals_not_null c
-INNER JOIN timely_care_hospitals p ON c.facility_id = p.facility_id
+JOIN timely_care_hospitals p ON c.facility_id = p.facility_id
 WHERE c.rated_measures >= 3;
 
 
@@ -394,7 +394,7 @@ LIMIT 50;
 -- Section 6: Statistical Analysis — Correlation
 -- =============================================================================
 
--- RESULT: n=3589  avg_imaging=6.05 | avg_ed=214.34 | r = -0.0197 | R^2 = 0.0004
+-- RESULT: n=3755  avg_imaging=6.05 | avg_ed=214.34 | r = -0.0197 | R^2 = 0.0004
 -- r near zero means no linear relationship between imaging overuse and ED wait times.
 -- R^2 = 0.0004% of variance explained, essentially noise.
 -- FINDING: Imaging overuse and ED delays are independent problems.
@@ -429,12 +429,13 @@ SELECT
     ROUND(CORR(i.avg_imaging_score, e.avg_ed_wait_minutes)::NUMERIC, 4) AS pearson_r,
     ROUND(POWER(CORR(i.avg_imaging_score, e.avg_ed_wait_minutes), 2)::NUMERIC, 4) AS r_squared
 FROM imaging_scores i
-INNER JOIN ed_scores e ON i.facility_id = e.facility_id;
+JOIN ed_scores e ON i.facility_id = e.facility_id;
 
 
--- Same correlation broken down by ownership type (excluding Tribal — 1 hospital).
--- If all three ownership types show r near zero, ownership doesn't moderate the relationship.
--- Combined with the overall query, this answers both Q1 and Q2.
+-- Correlation near zero across all three ownership types (r: -0.01 to -0.04), so ownership
+-- doesn't moderate the imaging/ED relationship — they're independent problems no matter who runs the hospital.
+-- One thing worth noting: Non-Profits have the longest ED waits (221 min) despite the highest star ratings overall.
+
 WITH imaging_scores AS (
     SELECT
         facility_id,
@@ -465,8 +466,8 @@ SELECT
     ROUND(STDDEV(e.avg_ed_wait_minutes), 2) AS sd_ed_wait,
     ROUND(CORR(i.avg_imaging_score, e.avg_ed_wait_minutes)::NUMERIC, 4) AS pearson_r
 FROM imaging_scores i
-INNER JOIN ed_scores e ON i.facility_id = e.facility_id
-INNER JOIN silver_schema.cms_hospital_general hg ON i.facility_id = hg.facility_id
+JOIN ed_scores e ON i.facility_id = e.facility_id
+JOIN silver_schema.cms_hospital_general hg ON i.facility_id = hg.facility_id
 WHERE hg.hospital_ownership != 'Tribal'
 GROUP BY hg.hospital_ownership
 ORDER BY n_hospitals DESC;
