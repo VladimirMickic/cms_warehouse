@@ -6,7 +6,7 @@ Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL t
 
 I started with two intuitive hypotheses: that imaging overuse and ED delays would cluster in the same hospitals (both feel like symptoms of the same problem), and that ownership type would predict which hospitals show that pattern.
 
-Both were wrong. The two are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits — Non-Profits run 20 minutes slower than Government hospitals — but has nothing to do with whether those problems co-occur. The real finding was structural: Non-Profits have the highest star ratings but the slowest emergency departments — clinical quality and operational speed are measuring different things.
+Both were wrong. The two are statistically independent (r = -0.020). Ownership tells you where your ED baseline sits, Non-Profits run 20 minutes slower than Government hospitals, but has nothing to do with whether those problems co-occur. The real finding was structural: Non-Profits have the highest star ratings but the slowest emergency departments, clinical quality and operational speed are measuring different things.
 
 ## Dashboard
 
@@ -20,7 +20,7 @@ Both were wrong. The two are statistically independent (r = -0.020). Ownership t
 hospital.xlsx → CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytical views)
 ```
 
-**Bronze** — Raw CMS data loaded as-is into 5 tables. Every column is TEXT to avoid import errors. No transforms, no cleaning. This layer exists so there's always an untouched copy to diff against when Silver produces unexpected numbers. Loaded via stored procedure with per-table exception handling and row-count logging.
+**Bronze** — Raw CMS data loaded as is into 5 tables. Every column is TEXT to avoid import errors. No transforms, no cleaning. This layer exists so there's always an untouched copy to diff against when Silver produces unexpected numbers. Loaded via stored procedure with per-table exception handling and row-count logging.
 
 **Silver** — Type casting, NULL standardization (empty strings + 'Not Available' + NULL all collapse to SQL NULL), and derived analytical columns. The hardest problem here was footnote handling: CMS footnote codes arrive as comma-separated strings like `'3, 13'` that indicate why a score is suppressed. Exact-match checking breaks on multi-code values (matching `'1'` would miss `'1, 5'` or false-match inside `'13'`), so all footnote logic uses PostgreSQL array overlap (`&&` with `string_to_array` and `TRIM`). Footnote codes feed a tiered priority system that classifies every row into `is_score_usable` (boolean) and `score_exclusion_reason` — footnote codes are evaluated before NULL scores, because a row with both needs the footnote-based classification, not the generic 'No Score' label. Ownership is consolidated from 12 CMS values to 4 groups with the original preserved in `hospital_ownership_details`.
 
@@ -40,7 +40,7 @@ hospital.xlsx → CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) 
 
 **Ownership:** 12 raw CMS values mapped to 4 groups (Government, Non-Profit, For-Profit, Tribal). Tribal stays separate — ~30 hospitals with a different regulatory framework. Original value kept in `hospital_ownership_details`.
 
-**Score usability:** CMS footnote codes indicate when a score is suppressed, unreliable, or based on too few cases. I parsed these into `is_score_usable` (boolean) and `score_exclusion_reason` with a tiered priority system — footnote codes are evaluated before checking for NULL scores, because multi-code footnotes like '3, 13' need to resolve to the right tier.
+**Score usability:** CMS footnote codes indicate when a score is suppressed, unreliable, or based on too few cases. I parsed these into `is_score_usable` (boolean) and `score_exclusion_reason` with a tiered priority system, footnote codes are evaluated before checking for NULL scores, because multi-code footnotes like '3, 13' need to resolve to the right tier.
 
 **Score splitting (timely_care):** The score column mixes numeric values, categorical text ('very high', 'low'), and 'Not Available' in the same field. Split into `score_numeric`, `score_text`, and `score_available` so each type can be handled correctly.
 
@@ -50,7 +50,7 @@ hospital.xlsx → CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) 
 
 ### Q1: Imaging overuse vs ED wait times
 
-3,587 hospitals had both usable imaging and ED scores (after excluding Tribal — only 1 survived the join). Pearson r = -0.020, R² = 0.0004. No relationship. A hospital with high CT overuse is no more likely to have a long ED wait. They are separate problems driven by separate causes.
+3,587 hospitals had both usable imaging and ED scores (after excluding Tribal and Teritory only 1 survived the join). Pearson r = -0.020, R² = 0.0004. No relationship. A hospital with high CT overuse is no more likely to have a long ED wait. They are separate problems driven by separate causes.
 
 <!-- ![Scatter plot showing no correlation between imaging scores and ED wait times](images/q1_scatter.png) -->
 
