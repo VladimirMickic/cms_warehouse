@@ -12,16 +12,6 @@ Both were wrong. The two are statistically independent (r = -0.020). Ownership t
 
 > **[View on Tableau Public →](https://public.tableau.com/app/profile/vladimir.mickic/viz/Hospitals_17760513311400/HospitalDashboard?publish=yes)**
 
-<!-- 
-  To add screenshots:
-  1. Create an images/ folder in your repo root
-  2. Export screenshots from Tableau as PNG (Dashboard > Export Image)
-  3. Drop them into images/
-  4. Uncomment the lines below and update filenames
--->
-
-<!-- ![Imaging vs ED Wait Scatter Plot](images/dashboard_scatter.png) -->
-<!-- ![Ownership Summary](images/dashboard_ownership.png) -->
 
 ## Architecture
 
