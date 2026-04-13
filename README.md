@@ -31,7 +31,6 @@ bronze/
 silver/
   silver_setup.sql          -- Typed tables with derived columns
   silver_proc_load.sql      -- Type casts, ownership mapping, footnote parsing, score splitting
-  silver_checks.sql         -- 10 pass/fail validation checks
   silver_validation.sql     -- Bronze vs silver spot-checks
   silver_exploration.sql    -- Queries that informed gold layer design
 
