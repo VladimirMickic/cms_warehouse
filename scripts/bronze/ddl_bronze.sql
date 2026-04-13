@@ -1,4 +1,15 @@
-SET SEARCH_PATH TO bronze_schema,public;
+-- =============================================================================
+-- bronze_setup.sql
+-- =============================================================================
+-- Raw landing zone for CMS Hospital Compare data. Five tables, one per
+-- source CSV file. Every column is TEXT, no casting, no transforms, no
+-- business logic. The point is an exact mirror of what CMS published so
+-- we have something to diff against when silver starts producing odd numbers.
+--
+-- dwh_load_date is the only column we add ourselves. Everything else is
+-- pulled straight from the CMS column headers.
+-- =============================================================================
+
 DROP TABLE IF EXISTS bronze_schema.cms_hospital_general;
 
 CREATE TABLE bronze_schema.cms_hospital_general (
