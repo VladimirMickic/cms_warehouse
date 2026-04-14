@@ -119,14 +119,14 @@ WITH comp_performance AS (
 process_care AS (
     SELECT
         facility_id,
-        -- Colonoscopy, Vaccination, Surgical Care only — comparable % compliance scales
+        -- Colonoscopy, Vaccination — comparable % compliance scales
         ROUND(AVG(score_numeric), 2) AS avg_process_care_score,
         COUNT(*)                     AS process_measures_count,
         MIN(start_date) AS process_period_start,
         MAX(end_date)   AS process_period_end
     FROM silver_schema.cms_timely_care
     WHERE condition IN ('Colonoscopy care', 'Healthcare Personnel Vaccination')
-      -- 'Surgical Care' does not exist in data; 'Cataract surgery outcome' is an outcome
+      -- Cataract surgery outcome' is an outcome
       -- measure not a compliance %, so excluded. Sepsis/ECQ/ED excluded as before.
       AND is_score_usable = TRUE
       AND score_numeric IS NOT NULL
