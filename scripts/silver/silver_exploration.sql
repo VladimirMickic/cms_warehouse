@@ -28,9 +28,8 @@ FROM silver_schema.cms_timely_care
 WHERE condition = 'Emergency Department'
 GROUP BY measure_id, measure_name;
 
-
 -- Imaging measures: all percentages, lower is better.
--- OP-8 median is 36.5% vs 3-7% for the others, completely different scale, must exclude from average.
+-- OP-8 avg is 36.9% vs 3.4–8.1% for the others — completely different scale, must exclude from average.
 -- OP-10 has the most usable rows (3,846), best candidate for pairing with OP_18b.
 -- OP-39 measures breast screening recall rates (false positive callbacks), not imaging overuse —
 -- include it since it's still an efficiency measure on the same percentage scale.
