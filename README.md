@@ -50,7 +50,7 @@ hospital.xlsx → CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) 
 
 ### Q1: Imaging overuse vs ED wait times
 
-3,587 hospitals had both usable imaging and ED scores (after excluding Tribal and Teritory only 1 survived the join). Pearson r = -0.020, R² = 0.0004. No relationship. A hospital with high CT overuse is no more likely to have a long ED wait. They are separate problems driven by separate causes.
+3,589 hospitals had both usable imaging and ED scores. The imaging score averages three outpatient imaging measures on a "lower = better" percentage scale: CT contrast overuse (OP-10), cardiac imaging before low-risk surgery (OP-13), and mammography recall rates (OP-39). Pearson r = -0.020, R-squared = 0.0004. No relationship. A hospital with high CT overuse is no more likely to have a long ED wait. They are separate problems driven by separate causes.
 
 <!-- ![Scatter plot showing no correlation between imaging scores and ED wait times](images/q1_scatter.png) -->
 
