@@ -142,16 +142,18 @@ SELECT
 FROM ed_hospitals ed JOIN imaging_hospitals ih ON ed.facility_id = ih.facility_id;
 
 
--- Survivorship bias check
--- For-Profit drops from 21% to 15.7%, Government from 24.6% to 20.5%.
--- Tribal drops to 1 hospital, consider excluding from analysis.
+-- Survivorship bias check: how ownership mix shifts after the INNER JOIN filter
+-- (hospitals need usable ED scores AND usable imaging scores to survive into the analysis)
+-- For-Profit shrinks from 21% of all hospitals to 15.7% of the joined sample, lowest survival rate.
+-- Government drops from 24.6% to 20.5%. Non-Profit holds up best (54% → 63.8%).
+-- Tribal collapses to 1 hospital -- exclude from any ownership-level comparisons.
 WITH ed_hospitals AS (SELECT DISTINCT facility_id
                       FROM silver_schema.cms_timely_care
                       WHERE condition = 'Emergency Department'
                         AND is_score_usable = TRUE
                         AND score_numeric IS NOT NULL)
 
-, imaging_hospitals AS(
+, imaging_hospitals AS (
     SELECT DISTINCT facility_id
     FROM silver_schema.cms_outpatient_imaging
     WHERE is_score_usable
@@ -160,13 +162,16 @@ WITH ed_hospitals AS (SELECT DISTINCT facility_id
 
 SELECT
     hospital_ownership,
-    (SELECT COUNT(*) FROM ed_hospitals) usable_ed,
-    (SELECT COUNT(*) FROM imaging_hospitals) usable_imaging,
-    COUNT(*) usable_with_both,
-    ROUND(100.0 * COUNT(*) / 5426,2) pct_of_all_hospitals
-FROM ed_hospitals ed JOIN imaging_hospitals ih ON ed.facility_id = ih.facility_id
+    (SELECT COUNT(*) FROM ed_hospitals)       AS usable_ed,
+    (SELECT COUNT(*) FROM imaging_hospitals)  AS usable_imaging,
+    COUNT(*)                                  AS usable_with_both,
+    ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS pct_of_joined_sample
+FROM ed_hospitals ed
+JOIN imaging_hospitals ih ON ed.facility_id = ih.facility_id
 LEFT JOIN silver_schema.cms_hospital_general hg ON ed.facility_id = hg.facility_id
+WHERE hospital_ownership != 'Tribal'
 GROUP BY hospital_ownership;
+
 
 
 -- 4,120 hospitals have usable complication data, 3,494 have 3+ rated measures.
