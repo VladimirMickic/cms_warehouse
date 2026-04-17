@@ -3,14 +3,14 @@
 SELECT 'dim_hospital' AS view_name, COUNT(*) AS row_count FROM gold_schema.dim_hospital;
 
 -- Check for any mislabeled values
--- Check passed no misabels
+-- Check passed no mislabels
 SELECT region, COUNT(*) AS n
 FROM gold_schema.dim_hospital
 GROUP BY region
 ORDER BY n DESC;
 
 -- Analytical row counts
--- Passd
+-- Passed
 SELECT 'vw_imaging_vs_ed_wait' AS view_name, COUNT(*) AS rows
 FROM gold_schema.vw_imaging_vs_ed_wait
 UNION ALL
