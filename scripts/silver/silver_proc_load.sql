@@ -24,7 +24,7 @@ Expected Row Counts:
     cms_infections           -> 172,404
 ===============================================================================
 */
-CALL silver_schema.load_silver();
+
 CREATE OR REPLACE PROCEDURE silver_schema.load_silver()
 LANGUAGE plpgsql
 AS $$
