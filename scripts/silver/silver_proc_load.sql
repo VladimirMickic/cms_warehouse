@@ -24,7 +24,7 @@ Expected Row Counts:
     cms_infections           -> 172,404
 ===============================================================================
 */
-
+CALL silver_schema.load_silver();
 CREATE OR REPLACE PROCEDURE silver_schema.load_silver()
 LANGUAGE plpgsql
 AS $$
@@ -279,7 +279,7 @@ BEGIN
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '8', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
             -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
@@ -354,7 +354,7 @@ BEGIN
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '8', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
             -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
@@ -420,7 +420,7 @@ BEGIN
             CASE
                 WHEN score IS NULL OR score = '' OR score = 'Not Available' OR score = 'N/A' THEN FALSE
                 WHEN ARRAY(SELECT TRIM(x) FROM unnest(string_to_array(footnote, ',')) x)
-                     && ARRAY['1', '2', '3', '4', '5', '7', '12', '13', '23', '28', '29'] THEN FALSE
+                     && ARRAY['1', '2', '3', '4', '5', '7', '8', '12', '13', '23', '28', '29'] THEN FALSE
                 ELSE TRUE
             END AS is_score_usable,
             -- score_exclusion_reason: footnote codes checked first so multi-code rows get highest-priority tier
