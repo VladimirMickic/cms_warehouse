@@ -1,5 +1,4 @@
 -- dim_hospital: expect 5,426 (one per facility)
--- dim_measure: expect 90
 -- Checks passed
 SELECT 'dim_hospital' AS view_name, COUNT(*) AS row_count FROM gold_schema.dim_hospital
 UNION ALL
