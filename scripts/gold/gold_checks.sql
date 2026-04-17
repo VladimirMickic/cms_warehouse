@@ -13,19 +13,12 @@ FROM gold_schema.dim_hospital
 GROUP BY region
 ORDER BY n DESC;
 
--- Measure category distribution
-SELECT measure_category, source_table, COUNT(*) AS n_measures
-FROM gold_schema.dim_measure
-GROUP BY measure_category, source_table
-ORDER BY source_table, measure_category;
-
-
 -- Analytical row counts
 -- Passd
 SELECT 'vw_imaging_vs_ed_wait' AS view_name, COUNT(*) AS rows
 FROM gold_schema.vw_imaging_vs_ed_wait
 UNION ALL
-SELECT 'vw_ownership_imaging_ed_summary', COUNT(*)
+SELECT 'vw_ownership_imaging_ed_stats', COUNT(*)
 FROM gold_schema.vw_ownership_imaging_ed_stats
 UNION ALL
 SELECT 'vw_complications_vs_process_care', COUNT(*)
