@@ -101,7 +101,7 @@ BEGIN
             END AS emergency_services,
             CASE
                 WHEN birthing_friendly_designation = 'Y' THEN TRUE
-                ELSE FALSE
+                ELSE NULL
             END AS birthing_friendly_designation,
             CASE
                 WHEN hospital_overall_rating ~ '^\d+$' THEN hospital_overall_rating::INT
