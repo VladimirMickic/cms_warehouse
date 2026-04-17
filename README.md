@@ -1,5 +1,7 @@
 # Hospital Quality Analysis — CMS Hospital Compare
 
+**Built with:** PostgreSQL 14 · SQL (CTEs, Window Functions, Stored Procedures, Array Operations) · Tableau
+
 **Do hospitals that over-order imaging also have longer ER waits?** Does ownership type predict it? And can a hospital follow every protocol and still be unsafe?
 
 Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL to find out.
@@ -70,7 +72,7 @@ Non-Profits have the highest star ratings but the slowest EDs. Star ratings meas
 
 Yes. Among the 30 hospitals with the most "Worse" complication ratings, process-of-care scores range from 42 to 84. One hospital had 5 "Worse" ratings with a compliance score of 83.55 — following every protocol but still producing bad outcomes. Checklist compliance alone does not predict clinical safety.
 
-## Further Analysis (`sql_analysis.sql`)
+## Further Analysis (`standalone_analysis/analysis.sql`)
 
 **Ownership vs quality ratings.** Government hospitals are not a monolith: VA hospitals average 4.2 stars with 77% high performers, while local/state government hospitals sit at 2.7–2.8. Lumping them together hides a massive gap. Non-Profits are consistently strong across all subtypes. For-Profit averages are the lowest (48% low performers), except physician-owned hospitals which outperform at 3.32.
 
