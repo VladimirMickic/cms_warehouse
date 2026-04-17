@@ -68,7 +68,7 @@ JOIN imaging_scores i ON d.facility_id = i.facility_id
 JOIN ed_scores e ON d.facility_id = e.facility_id;
 
 
-CREATE OR REPLACE VIEW gold_schema.vw_ownership_imaging_ed_summary AS
+CREATE OR REPLACE VIEW gold_schema.vw_ownership_imaging_ed_stats AS
 SELECT
     hospital_ownership,
     COUNT(*) AS n_hospitals,
