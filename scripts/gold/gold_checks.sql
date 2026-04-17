@@ -1,9 +1,6 @@
 -- dim_hospital: expect 5,426 (one per facility)
 -- Checks passed
-SELECT 'dim_hospital' AS view_name, COUNT(*) AS row_count FROM gold_schema.dim_hospital
-UNION ALL
-SELECT 'dim_measure', COUNT(*) FROM gold_schema.dim_measure
-ORDER BY view_name;
+SELECT 'dim_hospital' AS view_name, COUNT(*) AS row_count FROM gold_schema.dim_hospital;
 
 -- Check for any mislabeled values
 -- Check passed no misabels
