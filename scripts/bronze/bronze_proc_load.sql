@@ -13,7 +13,6 @@ Data Source:
 ===============================================================================
 */
 
-CALL bronze_schema.load_bronze();
 CREATE OR REPLACE PROCEDURE bronze_schema.load_bronze()
 LANGUAGE plpgsql
 AS $$
