@@ -2,6 +2,8 @@
 
 **Built with:** PostgreSQL 14 · SQL (CTEs, Window Functions, Stored Procedures, Array Operations) · Tableau
 
+**Author:** Vladimir Mickic · [LinkedIn](https://www.linkedin.com/in/vladimir-mickic/)
+
 **Do hospitals that over-order imaging also have longer ER waits?** Does ownership type predict it? And can a hospital follow every protocol and still be unsafe?
 
 Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL to find out.
