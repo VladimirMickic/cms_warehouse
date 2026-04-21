@@ -25,7 +25,7 @@ Both were wrong. The two are statistically independent (r = -0.020). Ownership t
 ## Architecture
 
 ```
-hospital.xlsx → CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytical views)
+CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytical views)
 ```
 
 **Bronze** — Raw CMS data loaded as is into 5 tables. Every column is TEXT to avoid import errors. No transforms, no cleaning. This layer exists so there's always an untouched copy to diff against when Silver produces unexpected numbers. Loaded via stored procedure with per-table exception handling and row-count logging.
