@@ -44,6 +44,18 @@ CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytic
 | cms_outpatient_imaging | 18,500 | CT/MRI ordering efficiency |
 | cms_infections | 172,404 | HAI rates: CLABSI, CAUTI, SSI, MRSA, C.diff |
 
+## Data Sources
+
+All data is sourced from [CMS Provider Data Catalog](https://data.cms.gov/provider-data/):
+
+| Dataset | CMS Link |
+|---|---|
+| Hospital General Information | [xubh-q36u](https://data.cms.gov/provider-data/dataset/xubh-q36u#data-table) |
+| Timely and Effective Care | [yv7e-xc69](https://data.cms.gov/provider-data/dataset/yv7e-xc69) |
+| Outpatient Imaging Efficiency | [wkfw-kthe](https://data.cms.gov/provider-data/dataset/wkfw-kthe) |
+| Complications and Deaths | [ynj2-r877](https://data.cms.gov/provider-data/dataset/ynj2-r877) |
+| Healthcare Associated Infections | [77hc-ibv8](https://data.cms.gov/provider-data/dataset/77hc-ibv8) |
+
 ## Key Transformations
 
 **Ownership:** 12 raw CMS values mapped to 4 groups (Government, Non-Profit, For-Profit, Tribal). Tribal stays separate ~30 hospitals with a different regulatory framework. Original value kept in `hospital_ownership_details`.
