@@ -4,7 +4,7 @@
 
 **Author:** Vladimir Mickic · [LinkedIn](https://www.linkedin.com/in/vladimir-mickic/)
 
-**Do hospitals that over-order imaging also have longer ER waits?** Does ownership type predict it? And can a hospital follow every protocol and still be unsafe?
+**Do hospitals that over order imaging also have longer ER waits?** Does ownership type predict it? And can a hospital follow every protocol and still be unsafe?
 
 Three questions, 5,400+ hospitals, a bronze-silver-gold pipeline in PostgreSQL to find out.
 
@@ -30,7 +30,7 @@ CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytic
 
 **Bronze** — Raw CMS data loaded as is into 5 tables. Every column is TEXT to avoid import errors. No transforms, no cleaning. This layer exists so there's always an untouched copy to diff against when Silver produces unexpected numbers. Loaded via stored procedure with per-table exception handling and row-count logging.
 
-**Silver** — Type casting, NULL standardization (empty strings + 'Not Available' + NULL all collapse to SQL NULL), and derived analytical columns. The hardest problem here was footnote handling: CMS footnote codes arrive as comma-separated strings like `'3, 13'` that indicate why a score is suppressed. Exact-match checking breaks on multi-code values (matching `'1'` would miss `'1, 5'` or false-match inside `'13'`), so all footnote logic uses PostgreSQL array overlap (`&&` with `string_to_array` and `TRIM`). Footnote codes feed a tiered priority system that classifies every row into `is_score_usable` (boolean) and `score_exclusion_reason` — footnote codes are evaluated before NULL scores, because a row with both needs the footnote-based classification, not the generic 'No Score' label. Ownership is consolidated from 12 CMS values to 4 groups with the original preserved in `hospital_ownership_details`.
+**Silver** — Type casting, NULL standardization (empty strings + 'Not Available' + NULL all collapse to SQL NULL), and derived analytical columns. The hardest problem here was footnote handling: CMS footnote codes arrive as comma-separated strings like `'3, 13'` that indicate why a score is suppressed. Exact-match checking breaks on multi code values (matching `'1'` would miss `'1, 5'` or false-match inside `'13'`), so all footnote logic uses PostgreSQL array overlap (`&&` with `string_to_array` and `TRIM`). Footnote codes feed a tiered priority system that classifies every row into `is_score_usable` (boolean) and `score_exclusion_reason` — footnote codes are evaluated before NULL scores, because a row with both needs the footnote-based classification, not the generic 'No Score' label. Ownership is consolidated from 12 CMS values to 4 groups with the original preserved in `hospital_ownership_details`.
 
 **Gold** — Three analytical views, each joining only the Silver tables it needs (no monolithic fact table). `dim_hospital` provides region mapping via US Census Bureau definitions. Views are implemented as standard PostgreSQL views (not materialized) — the query planner pushes filters down into Silver, so the full row set is never materialized unnecessarily.
 
@@ -46,7 +46,7 @@ CSV sheets → Bronze (raw TEXT) → Silver (typed + cleaned) → Gold (analytic
 
 ## Key Transformations
 
-**Ownership:** 12 raw CMS values mapped to 4 groups (Government, Non-Profit, For-Profit, Tribal). Tribal stays separate — ~30 hospitals with a different regulatory framework. Original value kept in `hospital_ownership_details`.
+**Ownership:** 12 raw CMS values mapped to 4 groups (Government, Non-Profit, For-Profit, Tribal). Tribal stays separate ~30 hospitals with a different regulatory framework. Original value kept in `hospital_ownership_details`.
 
 **Score usability:** CMS footnote codes indicate when a score is suppressed, unreliable, or based on too few cases. I parsed these into `is_score_usable` (boolean) and `score_exclusion_reason` with a tiered priority system, footnote codes are evaluated before checking for NULL scores, because multi-code footnotes like '3, 13' need to resolve to the right tier.
 
@@ -76,17 +76,17 @@ Non-Profits have the highest star ratings but the slowest EDs. Star ratings meas
 
 ### Q3: Can a hospital be compliant but still unsafe?
 
-Yes. Among the 30 hospitals with the most "Worse" complication ratings, process-of-care scores range from 42 to 84. One hospital had 5 "Worse" ratings with a compliance score of 83.55 — following every protocol but still producing bad outcomes. Checklist compliance alone does not predict clinical safety.
+Yes. Among the 30 hospitals with the most "Worse" complication ratings, process-of-care scores range from 42 to 84. One hospital had 5 "Worse" ratings with a compliance score of 83.55  following every protocol but still producing bad outcomes. Checklist compliance alone does not predict clinical safety.
 
 ## Further Analysis (`standalone_analysis/analysis.sql`)
 
-**Ownership vs quality ratings.** Government hospitals are not a monolith: VA hospitals average 4.2 stars with 77% high performers, while local/state government hospitals sit at 2.7–2.8. Lumping them together hides a massive gap. Non-Profits are consistently strong across all subtypes. For-Profit averages are the lowest (48% low performers), except physician-owned hospitals which outperform at 3.32.
+**Ownership vs quality ratings.** Government hospitals are not a monolith: VA hospitals average 4.2 stars with 77% high performers, while local/state government hospitals sit at 2.7–2.8. Lumping them together hides a massive gap. Non-Profits are consistently strong across all subtypes. For-Profit averages are the lowest (48% low performers), except physician owned hospitals which outperform at 3.32.
 
 **Reporting completeness vs star ratings.** Do hospitals that report on more measures also rate higher? Pearson r = -0.041 (R² = 0.0017). Transparency and quality are statistically independent in this data.
 
 **Infections vs complications vs process compliance.** Infections and complications are both adverse outcomes but come from different measurement systems. Quadrant analysis (median split on both dimensions) identifies hospitals that follow every checklist but still have elevated complication rates. They exist, and the group is not small.
 
-**UPMC Presbyterian Shadyside deep dive.** Benchmarked against PA non-profit acute care peers across all four fact domains. Gap-to-5-star analysis compares UPMC's four weakest measures (PSI_03, PSI_90, OP-10, HAI_1_SIR) against the 12 five-star hospitals in the peer group. Two actionable problems: pressure ulcer protocols and CT contrast ordering.
+**UPMC Presbyterian Shadyside deep dive.** Benchmarked against PA non-profit acute care peers across all four fact domains. Gap to 5 star analysis compares UPMC's four weakest measures (PSI_03, PSI_90, OP-10, HAI_1_SIR) against the 12 five-star hospitals in the peer group. Two actionable problems: pressure ulcer protocols and CT contrast ordering.
 
 ## Data Quality Patterns
 
@@ -104,7 +104,7 @@ Building the pipeline turned up several data-handling bugs that would have produ
 
 **Score exclusion priority was backwards.** The CASE statement checked for NULL scores first, so rows with a NULL score AND a meaningful footnote code (like '3, 13') got labeled 'No Score' instead of the correct footnote-based tier. Reordered so footnote codes are evaluated first.
 
-**Zero-infection hospitals weren't flagged.** Footnote code 8 (zero infections) was missing from the `is_score_usable` blacklist. All code 8 rows have NULL scores — CMS doesn't compute a ratio when there's nothing to ratio — but the pipeline was treating them as if a score might exist.
+**Zero-infection hospitals weren't flagged.** Footnote code 8 (zero infections) was missing from the `is_score_usable` blacklist. All code 8 rows have NULL scores, CMS doesn't compute a ratio when there's nothing to ratio — but the pipeline was treating them as if a score might exist.
 
 **`birthing_friendly_designation` conflated "unknown" with "no."** Mapped 'Y' to TRUE, everything else (including NULL) to FALSE. Fixed to use NULL for unknowns.
 
